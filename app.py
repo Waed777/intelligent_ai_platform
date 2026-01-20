@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 from data_generator import generate_transactions
 from models import train_anomaly_model
 from automation import generate_recommendations
-import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="AI Big Data Risk Platform", layout="wide")
 st.title("🧠 AI‑Driven Big Data Risk & Opportunity Platform")
@@ -14,10 +14,29 @@ uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
 
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
-    st.write("Preview of uploaded data:")
-    st.dataframe(df.head())
+    
+    # ---------- Column Mapping for User Convenience ----------
+    column_mapping = {
+        "TransactionAmount": "transaction_amount",
+        "Balance": "account_balance",
+        "Hour": "transaction_hour",
+        "International": "is_international",
+        "MerchantRisk": "merchant_risk_score"
+    }
+    df.rename(columns=column_mapping, inplace=True)
+    
+    # ---------- Required Features ----------
+    required_features = ["transaction_amount", "account_balance", "transaction_hour", "is_international", "merchant_risk_score"]
+    
+    # ---------- Check Missing Columns ----------
+    missing_cols = [col for col in required_features if col not in df.columns]
+    if missing_cols:
+        st.error(f"❌ Missing required columns: {missing_cols}")
+        st.stop()
+    else:
+        st.success("✅ All required columns found. Proceeding with analysis.")
 else:
-    # Generate simulated data if no upload
+    # Use simulated data if no upload
     df = generate_transactions(N=50000)
     st.info("No file uploaded. Using simulated data for demo purposes.")
 
@@ -54,6 +73,3 @@ st.dataframe(anomalies.head(20))
 # -------- AI Recommendations Table --------
 st.subheader("🤖 AI Recommendations")
 st.dataframe(pd.DataFrame(recommendations))
-
-st.dataframe(pd.DataFrame(generate_recommendations(df)))
-
